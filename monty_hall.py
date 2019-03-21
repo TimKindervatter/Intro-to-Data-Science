@@ -4,13 +4,14 @@ import numpy as np
 
 
 #%%
-def simulate_prizedoor(nsim):
+def simulate_prizedoor(nsim, n):
     """
     Generate a random array of 0s, 1s, and 2s, representing
     hiding a prize between door 0, door 1, and door 2
 
     Args:
         nsim (int): The number of simulations to run
+        n (int): Number of doors
 
     Returns:
         sims (np array): Random array of 0s, 1s, and 2s
@@ -20,17 +21,18 @@ def simulate_prizedoor(nsim):
         array([0, 0, 2])
     """
 
-    return np.random.randint(0,3, (nsim))
+    return np.random.randint(0,n,(nsim))
 
 
 #%%
-def simulate_guess(nsim):
+def simulate_guess(nsim, n):
     """
     Return any strategy for guessing which door a prize is behind. This
     could be a random strategy, one that always guesses 2, whatever.
 
     Args:
         nsim (int): The number of simulations to generate guesses for
+        n (int): Number of doors
 
     Returns:
         guesses (np array): An array of guesses. Each guess is a 0, 1, or 2
@@ -40,14 +42,11 @@ def simulate_guess(nsim):
         array([0, 0, 0, 0, 0])
     """
 
-    guesses = np.array([], dtype = np.int)
-    for sim in range(nsim):
-        guesses = np.append(guesses, random.randint(0,2))
-    return guesses
+    return np.random.randint(0,n,(nsim))
 
 
 #%%
-def reveal_door(prizedoors, guesses):
+def reveal_door(prizedoors, guesses, n):
     """
     Simulate the opening of a "goat door" that doesn't contain the prize,
     and is different from the contestants guess
@@ -55,6 +54,7 @@ def reveal_door(prizedoors, guesses):
     Args:
         prizedoors (np array): The door that the prize is behind in each simulation
         guesses (np array): The door that the contestant guessed in each simulation
+        n (int): Number of doors
 
     Returns:
     goats (np array): The goat door that is opened for each simulation. Each item is 0, 1, or 2, and is different from both prizedoors and guesses
@@ -65,13 +65,16 @@ def reveal_door(prizedoors, guesses):
     """
 
     assert(len(prizedoors) == len(guesses)), "Both input arrays must have the same length! The given arrays had lengths {0} and {1}".format(len(prizedoors), len(guesses))
-    doors = [0,1,2]
+
+    #Create a list of all doors
+    doors = np.arange(n, dtype = np.int)
+    #Preallocate an array of zeros with length equal to the number of doors
     revealed_doors = np.array([], dtype = np.int)
 
     #For each simulation
     for i in range(len(prizedoors)):
         #Start with the list of all doors
-        door_to_reveal = np.array(doors[:])
+        door_to_reveal = np.copy(doors)
         #We don't want to reveal the prize door, so remove it from the list
         door_to_reveal = door_to_reveal[door_to_reveal != prizedoors[i]]
 
@@ -89,13 +92,14 @@ def reveal_door(prizedoors, guesses):
 
 
 #%%
-def switch_guess(guesses, revealed_doors):
+def switch_guess(guesses, revealed_doors, n):
     """
     The strategy that always switches a guess after the goat door is opened
 
     Args:
         guesses (np array): Array of original guesses, for each simulation
         revealed_doors (np array): Array of revealed goat doors for each simulation
+        n (int): Number of doors
 
     Returns:
         The new door after switching. Should be different from both guesses and goatdoors
@@ -106,7 +110,10 @@ def switch_guess(guesses, revealed_doors):
     """
 
     assert(len(prizedoors) == len(guesses)), "Both input arrays must have the same length! The given arrays had lengths {0} and {1}".format(len(guesses), len(revealed_doors))
-    doors = [0,1,2]
+
+    #Create a list of all doors
+    doors = np.arange(n, dtype = np.int)
+    #Preallocate an array of zeros with length equal to the number of doors
     new_guesses = np.array([], dtype = np.int)
 
     #For each simulation
@@ -143,28 +150,20 @@ def win_percentage(prizedoors, guesses):
     """
 
     assert(len(prizedoors) == len(guesses)), "Both input arrays must have the same length! The given arrays had lengths {0} and {1}".format(len(prizedoors), len(guesses))
-    wins = np.array([], dtype = int)
-
-    #For each simulation
-    for i in range(len(prizedoors)):
-        #If the prize door was guessed
-        if prizedoors[i] == guesses[i]:
-            #Mark the simulation as a win
-            wins = np.append(wins, 1)
-        #If the prize door was not guessed
-        else:
-            #Mark the simulation as a loss
-            wins = np.append(wins, 0)
 
     #All entries are 0 (loss) or 1 (win), so the mean is the percentage of wins
-    return wins.mean()
+    return (guesses == prizedoors).mean()
+
 
 #%%
-#Run 10000 simulations
-prizedoors = simulate_prizedoor(10000)
-guesses = simulate_guess(10000)
-revealed_doors = reveal_door(prizedoors, guesses)
-new_guesses = switch_guess(guesses, revealed_doors)
+#Run 10000 simulations with 10 doors
+simulations = 10000
+doors = 3
+
+prizedoors = simulate_prizedoor(simulations, doors)
+guesses = simulate_guess(simulations, doors)
+revealed_doors = reveal_door(prizedoors, guesses, doors)
+new_guesses = switch_guess(guesses, revealed_doors, doors)
 
 #Determine the percentage of wins if the contestant does not switch their choice
 win_percentage_without_switch = win_percentage(prizedoors, guesses)
